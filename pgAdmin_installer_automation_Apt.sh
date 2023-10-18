@@ -1,7 +1,7 @@
 #! /bin/bash
 # Wait times
 WAIT_TO_LAUNCH_APP=15
-WAIT_TO_LAUNCH_FF=15
+WAIT_TO_LAUNCH_FF=10
 WAIT_TO_LAUNCH_PGAMIN_IN_NWJS=15
 WAIT_TO_LAUNCH_PGAMIN_IN_FF=8
 ABOUT_BOX_SHOW_TIME=3
@@ -76,7 +76,7 @@ fi
 # Setup display
 echo '******Setting up display.********'
 xrandr --output Virtual1 --mode 1440x900 --size 16:10
-sleep 2
+sleep 1.5
 
 # Move Terminal Window to bottom
 wid=`xdotool getactivewindow`
@@ -139,23 +139,42 @@ _wait_for_window(){
   win_name=$1
   wait_time=$2
   counter=$wait_time
+  echo -ne '----Will wait for for '$counter' seconds to search window.'
   while [[ $counter -gt 0 ]]
   do
-    wid=`xdotool search --onlyvisible --desktop --name "${win_name}"`
+    wid=`xdotool search --onlyvisible --class --classname --name "${win_name}"`
     if [[ -z "$wid" ]]; then
       sleep 2
       counter=$(( counter - 1 ))
       if  [[ "$counter" -eq 0 ]]; then
+        echo
         echo '---- '$win_name' not found after '$wait_time
         exit 1
+      else
+        echo -ne "."
       fi
     else
+      echo
       echo '--- '$win_name' found.'
       counter=0
       sleep 2
     fi
   done
 
+}
+
+_wait_method(){
+  set +e
+  wait_time=$1
+  counter=$wait_time
+  echo -ne '---Waiting for '$counter' seconds'
+  while [ $counter -gt 0 ]
+  do
+    sleep 1
+    echo -ne "."
+    counter=$(( $counter -1))
+  done
+  echo
 }
 
 _verify_installed_pgadmin_server_mode(){
@@ -190,6 +209,7 @@ _verify_installed_pgadmin_server_mode(){
   app_name="Mozilla Firefox"
   time=$WAIT_TO_LAUNCH_APP
   _wait_for_window "$app_name" "$time"
+  _wait_method $WAIT_TO_LAUNCH_FF
   set -e
 
   # Search to ff window
@@ -223,7 +243,7 @@ _verify_installed_pgadmin_server_mode(){
   echo '----Opening pgAdmin in FF'
   xdotool type "http://127.0.0.1/pgadmin4"
   xdotool key Return
-  sleep $WAIT_TO_LAUNCH_PGAMIN_IN_FF
+  _wait_method $WAIT_TO_LAUNCH_PGAMIN_IN_FF
 
   #Move to login email and password &  Enter email
   echo '----Entering login details'
@@ -231,11 +251,11 @@ _verify_installed_pgadmin_server_mode(){
   xdotool key "Tab"
   xdotool type "adminedb"
   xdotool key "Return"
-  sleep 5
+  _wait_method 6
 
   # Handle password save
   xdotool mousemove 240 530 click 1
-  sleep 0.5
+  sleep 1
   # Verify version
   echo '----Verifying version from About'
   # Open Help
@@ -300,7 +320,7 @@ _verify_installed_pgadmin_dektop_mode(){
   app_name="pgAdmin 4"
   time=$WAIT_TO_LAUNCH_APP
   _wait_for_window "$app_name" "$time"
-  sleep $WAIT_TO_LAUNCH_PGAMIN_IN_NWJS
+  _wait_method $WAIT_TO_LAUNCH_PGAMIN_IN_NWJS
   set -e
 
   # Search to pgAdmin window
@@ -383,7 +403,7 @@ _upgrade_pgadmin_to_candidate_build(){
   set +e
   default_date=$(date +'%Y-%m-%d')-1
   echo '----Enter the caididate build date [default:'  $default_date ']'
-    read -r -p "----Will wait 10 seconds or press any key to continue immediately" -t 1- date
+  read -r -p "----Will wait 10 seconds or press any key to continue immediately" -t 10 date
   date="${date:=$default_date}"'/'
   echo '----Select release date is - '$date
   set -e
@@ -416,7 +436,7 @@ _upgrade_pgadmin_to_candidate_build(){
   # Final msg
   echo '\n'
   echo '***********************************************************'
-  echo 'pgAdmin upgraded to candidate build successfully - '$(apt-show-versions pgadmin4-"$suffix")
+  echo 'pgAdmin upgraded to candidate build successfully - '$(apt-show-versions pgadmin4"$suffix")
   echo '***********************************************************'
   echo '\n'
 }
@@ -446,7 +466,7 @@ _install_candidate_build_pgadmin(){
   set +e
   default_date=$(date +'%Y-%m-%d')-1
   echo '----Enter the caididate build date [default:'  $default_date '].'
-  read -r -p "----Will wait 10 seconds or press any key to continue immediately" -t 5 date
+  read -r -p "----Will wait 10 seconds or press any key to continue immediately" -t 10 date
   date="${date:=$default_date}"'/'
   echo '----Selected release date is - '$date
   set -e

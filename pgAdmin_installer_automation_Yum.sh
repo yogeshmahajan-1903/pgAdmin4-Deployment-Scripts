@@ -1,6 +1,6 @@
 #! /bin/bash
 WAIT_TO_LAUNCH_APP=15
-WAIT_TO_LAUNCH_FF=15
+WAIT_TO_LAUNCH_FF=10
 WAIT_TO_LAUNCH_PGAMIN_IN_NWJS=15
 
 WAIT_TO_LAUNCH_PGAMIN_IN_FF=8
@@ -98,7 +98,7 @@ _install_released_pgadmin(){
   IS_REDHAT=0
   IS_FEDORA=0
   os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
-  if [[ "$os_name" = "Red Hat Enterprise Linux" || "$os_name" = "Rocky Linux" ]]; then
+  if [[ "$os_name" = "Red Hat Enterprise Linux" || "$os_name" = "Rocky Linux"  || "$os_name" = "AlmaLinux" ]]; then
     IS_REDHAT=1
   elif [ "$os_name" = "Fedora Linux"  ]; then
     IS_FEDORA=1
@@ -225,6 +225,7 @@ _verify_installed_pgadmin_server_mode(){
   app_name="Mozilla Firefox"
   time=$WAIT_TO_LAUNCH_APP
   _wait_for_window "$app_name" "$time"
+  sleep $WAIT_TO_LAUNCH_FF
   set -e
 
   # Search to FF window
@@ -418,7 +419,7 @@ _upgrade_pgadmin_to_candidate_build(){
   IS_REDHAT=0
   IS_FEDORA=0
   os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
-  if [[ "$os_name" = "Red Hat Enterprise Linux" || "$os_name" = "Rocky Linux" ]]; then
+  if [[ "$os_name" = "Red Hat Enterprise Linux" || "$os_name" = "Rocky Linux" || "$os_name" = "AlmaLinux" ]]; then
     IS_REDHAT=1
   elif [ "$os_name" = "Fedora Linux"  ]; then
     IS_FEDORA=1
@@ -506,7 +507,7 @@ _install_candidate_build_pgadmin(){
   IS_REDHAT=0
   IS_FEDORA=0
   os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
-  if [[ "$os_name" = "Red Hat Enterprise Linux"  || "$os_name" = "Rocky Linux" ]]; then
+  if [[ "$os_name" = "Red Hat Enterprise Linux"  || "$os_name" = "Rocky Linux"  || "$os_name" = "AlmaLinux" ]]; then
     IS_REDHAT=1
   elif [ "$os_name" = "Fedora Linux"  ]; then
     IS_FEDORA=1
@@ -597,7 +598,7 @@ _install_snapshot_build_pgadmin(){
   IS_REDHAT=0
   IS_FEDORA=0
   os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
-  if [[ "$os_name" = "Red Hat Enterprise Linux"  || "$os_name" = "Rocky Linux" ]]; then
+  if [[ "$os_name" = "Red Hat Enterprise Linux"  || "$os_name" = "Rocky Linux"  || "$os_name" = "AlmaLinux" ]]; then
     IS_REDHAT=1
   elif [ "$os_name" = "Fedora Linux"  ]; then
     IS_FEDORA=1

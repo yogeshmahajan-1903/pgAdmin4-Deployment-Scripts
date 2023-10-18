@@ -12,13 +12,15 @@ Debian -
 1. Initial Setup.This may ask for restart.
 
   ```
-sudo bash pre_requivist_Apt.sh
+bash pre_requivist_Apt.sh
 ```
 2. Run script by specifying operation & mode. Command to install released version pgAdmin in both modes.
 
 ```
 sudo bash pgAdmin_installer_automation_Apt.sh -o install
 ````
+
+Note: While installing in server mode, email/password should be entered edb@edb.com/adminedb
 
   For server mode only
   ```
