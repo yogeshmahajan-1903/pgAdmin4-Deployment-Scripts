@@ -5,6 +5,9 @@ OS_VERSION=$(grep "^VERSION_ID=" /etc/os-release | awk -F "=" '{ print $2 }' | s
 
 sudo yum install -y "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${OS_VERSION}.noarch.rpm"
 
+sudo yum install -y "https://download.fedoraproject.org/pub/epel/epel-release-latest-${OS_VERSION}.noarch.rpm"
+
+
 sudo yum install xdotool -y
 sudo yum install xrandr -y
 echo $XDG_SESSION_TYPE

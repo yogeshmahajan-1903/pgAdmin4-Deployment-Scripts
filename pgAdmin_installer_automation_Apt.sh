@@ -4,7 +4,10 @@ WAIT_TO_LAUNCH_APP=15
 WAIT_TO_LAUNCH_FF=10
 WAIT_TO_LAUNCH_PGAMIN_IN_NWJS=15
 WAIT_TO_LAUNCH_PGAMIN_IN_FF=8
+WAIT_FOR_USER_INPUT=8
 ABOUT_BOX_SHOW_TIME=3
+
+BUILD_DATE=''
 
 # Exit on error
 set -e
@@ -12,11 +15,12 @@ set -e
 # Set up parser
 help()
 {
-    echo "Usage: bash pgAdmin_installer_automation_Apt_v1.sh 
+    echo "Usage: bash pgAdmin_installer_automation_Apt.sh 
                   [ -o | --operation ]
                       (required)[ install, install_snapshot, install_cb,
                                   verify, 
-                                  upgrade_cb, upgrade_test, fresh_test], 
+                                  upgrade_cb, upgrade_test, fresh_test,
+                                  uninstall], 
                   [ -m | --mode ]
                       (optional):[desktop or server]
                   [ -h | --help  ]"
@@ -24,7 +28,7 @@ help()
 }
 SHORT=o:,m:,h
 LONG=operation:,mode:,help
-OPTS=$(getopt -a -n pgAdmin_installer_automation_Apt_v1.sh --options $SHORT --longoptions $LONG -- "$@")
+OPTS=$(getopt -a -n pgAdmin_installer_automation_Apt.sh --options $SHORT --longoptions $LONG -- "$@")
 
 VALID_ARGUMENTS=$# # Returns the count of arguments that are in short or long options
 
@@ -60,7 +64,7 @@ do
 done
 
 
-operations=("install" "install_cb" "install_snapshot" "verify" "upgrade_cb" "upgrade_test" "fresh_test")
+operations=("install" "install_cb" "install_snapshot" "verify" "upgrade_cb" "upgrade_test" "fresh_test" "uninstall")
 modes=("desktop" "server" "")
 if ! [[ " ${operations[@]} " =~ " ${operation} "  ]]; then
   echo 'Invalid operation'
@@ -167,14 +171,22 @@ _wait_method(){
   set +e
   wait_time=$1
   counter=$wait_time
-  echo -ne '---Waiting for '$counter' seconds'
+  echo -ne '----Waiting for '$counter' seconds'
   while [ $counter -gt 0 ]
   do
-    sleep 1
-    echo -ne "."
+    read -t 1 -n 1
+    if [ $? = 0 ] ; then
+      counter=0
+      sleep 1
+    else
+      echo -ne "."
+    fi
     counter=$(( $counter -1))
   done
+  if [ $counter = 0 ]; then
   echo
+  fi
+  set -e
 }
 
 _verify_installed_pgadmin_server_mode(){
@@ -213,8 +225,9 @@ _verify_installed_pgadmin_server_mode(){
   set -e
 
   # Search to ff window
-  wid=`xdotool search --sync --onlyvisible --desktop --name "${app_name}"`
+  wid=`xdotool search --sync --onlyvisible --class --classname --name "${app_name}"`
   xdotool windowactivate $wid key --delay 250 ctrl+t
+  xdotool windowfocus $wid
 
   # Check if window is maximized
   # Try to unmaximize
@@ -324,7 +337,8 @@ _verify_installed_pgadmin_dektop_mode(){
   set -e
 
   # Search to pgAdmin window
-  wid=`xdotool search --onlyvisible --desktop --name "pgAdmin 4"`
+  wid=`xdotool search --onlyvisible --class --classname --name "pgAdmin 4"`
+  xdotool windowfocus $wid
 
   # Check if window is maximized
   # Try to unmaximize
@@ -387,35 +401,95 @@ _verify_installed_pgadmin(){
   fi
 }
 
+_get_build_date(){
+  # Take build date
+  set +e
+  build_type=$1
+    if [ "$build_type" = "cb" ]; then
+      default_date=$(date +'%Y-%m-%d')-1
+      read -r -p "----Enter the caididate build date. Press enter to select default.[default:$(date +'%Y-%m-%d')-1]." date
+      date="${date:=$default_date}"
+      echo '----Selected candidate build date is - '$date
+      BUILD_DATE=$date
+    else
+        default_date=$(date +'%Y-%m-%d')
+        read -r -p "----Enter the snapshot build date. Press enter to select default.[default:$(date +'%Y-%m-%d')]." date
+        date="${date:=$default_date}"
+        echo '----Selected snapshot build date is - '$date
+        BUILD_DATE=$date
+    fi
+  set -e
+}
+
+_update_repo(){
+  set +e
+  build_type=$1
+
+  KEY=/usr/share/keyrings/packages-pgadmin-org.gpg
+  if [[ -f "$KEY" ]]; then
+    echo "----Key exists. Removing key"
+    rm -f /usr/share/keyrings/packages-pgadmin-org.gpg
+  fi
+  echo '----Adding key'
+  curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo gpg  --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg
+  
+    echo '----Adding repo config file'
+  if [ "$build_type" = "cb" ]; then
+    # From url
+    url='https://developer.pgadmin.org/builds/'$BUILD_DATE='''/apt/$(lsb_release -cs)'
+    url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
+    echo '----Using url - '$url
+
+    # Add/Update  repo config
+    echo '----Creating repo config'
+    sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
+  else
+    # From url
+    url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$BUILD_DATE='''/apt/$(lsb_release -cs)'
+    url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
+    echo '----Using url - '$url
+
+    # Add/Update  repo config
+    echo '----Creating repo config'
+    sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
+  fi
+  set -e
+}
+
+
 _upgrade_pgadmin_to_candidate_build(){
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'Upgrading pgAdmin to candidate build : - '$mode
   echo '***********************************************************'
-  echo '\n'
-  # Constants
-  platform='apt'
+  echo ''
 
-  
   # Take candidate build date
-  set +e
-  default_date=$(date +'%Y-%m-%d')-1
-  echo '----Enter the caididate build date [default:'  $default_date ']'
-  read -r -p "----Will wait 10 seconds or press any key to continue immediately" -t 10 date
-  date="${date:=$default_date}"'/'
-  echo '----Select release date is - '$date
-  set -e
+  _get_build_date cb
 
-  # From url
-  url='https://developer.pgadmin.org/builds/'$date'/apt/$(lsb_release -cs)'
-  url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
-  echo '----Using url - '$url
+  # Update repo data
+  _update_repo cb
 
-  # Add/Update repo config
-  echo '----Creating repo config'
-  sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
+  # TOREMOVE
+  # # Take candidate build date
+  # set +e
+  # default_date=$(date +'%Y-%m-%d')-1
+  # echo '----Enter the caididate build date [default:'  $default_date ']'
+  # read -r -p "----Will wait $WAIT_FOR_USER_INPUT seconds or press any key to continue immediately" -t $WAIT_FOR_USER_INPUT date
+  # date="${date:=$default_date}"'/'
+  # echo '----Select release date is - '$date
+  # set -e
+
+  # # From url
+  # url='https://developer.pgadmin.org/builds/'$date'/apt/$(lsb_release -cs)'
+  # url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
+  # echo '----Using url - '$url
+
+  # # Add/Update repo config
+  # echo '----Creating repo config'
+  # sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
 
   # Check mode
   suffix=""
@@ -434,11 +508,11 @@ _upgrade_pgadmin_to_candidate_build(){
   fi
   
   # Final msg
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin upgraded to candidate build successfully - '$(apt-show-versions pgadmin4"$suffix")
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 }
 
 _install_candidate_build_pgadmin(){
@@ -447,38 +521,46 @@ _install_candidate_build_pgadmin(){
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
 
   # Info
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'Installing Candidate build pgAdmin mode: - '$mode
   echo '***********************************************************'
-  echo '\n'
+  echo ''
+
   echo '******Downloading candidate build pgAdmin.*******'
-  KEY=/usr/share/keyrings/packages-pgadmin-org.gpg
-  if [[ -f "$KEY" ]]; then
-    echo "----Key exists. Removing key"
-    rm -f /usr/share/keyrings/packages-pgadmin-org.gpg
-  fi
-  echo '----Adding key'
-  curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo gpg  --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg
 
-  echo '----Adding repo config file'
   # Take candidate build date
-  set +e
-  default_date=$(date +'%Y-%m-%d')-1
-  echo '----Enter the caididate build date [default:'  $default_date '].'
-  read -r -p "----Will wait 10 seconds or press any key to continue immediately" -t 10 date
-  date="${date:=$default_date}"'/'
-  echo '----Selected release date is - '$date
-  set -e
+  _get_build_date cb
 
-  # From url
-  url='https://developer.pgadmin.org/builds/'$date'/apt/$(lsb_release -cs)'
-  url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
-  echo '----Using url - '$url
+  # Update repo data
+  _update_repo cb
 
-  # Add/Update  repo config
-  echo '----Creating repo config'
-  sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
+  # KEY=/usr/share/keyrings/packages-pgadmin-org.gpg
+  # if [[ -f "$KEY" ]]; then
+  #   echo "----Key exists. Removing key"
+  #   rm -f /usr/share/keyrings/packages-pgadmin-org.gpg
+  # fi
+  # echo '----Adding key'
+  # curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo gpg  --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg
+
+  # echo '----Adding repo config file'
+  # # Take candidate build date
+  # set +e
+  # default_date=$(date +'%Y-%m-%d')-1
+  # echo '----Enter the caididate build date [default:'  $default_date '].'
+  # read -r -p "----Will wait $WAIT_FOR_USER_INPUT seconds or press any key to continue immediately" -t $WAIT_FOR_USER_INPUT date
+  # date="${date:=$default_date}"'/'
+  # echo '----Selected release date is - '$date
+  # set -e
+
+  # # From url
+  # url='https://developer.pgadmin.org/builds/'$date'/apt/$(lsb_release -cs)'
+  # url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
+  # echo '----Using url - '$url
+
+  # # Add/Update  repo config
+  # echo '----Creating repo config'
+  # sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
 
   # Check mode
   suffix=""
@@ -497,11 +579,11 @@ _install_candidate_build_pgadmin(){
     sudo apt install pgadmin4 -y
     sudo /usr/pgadmin4/bin/setup-web.sh --yes
   fi
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin Candidate Build installed successfully - '$(apt-show-versions pgadmin4"$suffix")
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 }
 
 _install_snapshot_build_pgadmin(){
@@ -510,37 +592,44 @@ _install_snapshot_build_pgadmin(){
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
 
   # Info
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'Installing Snapshot build pgAdmin mode: - '$mode
   echo '***********************************************************'
-  echo '\n'
+  echo ''
   echo '******Downloading snapshot build pgAdmin.*******'
-  KEY=/usr/share/keyrings/packages-pgadmin-org.gpg
-  if [[ -f "$KEY" ]]; then
-    echo "----Key exists. Removing key"
-    rm -f /usr/share/keyrings/packages-pgadmin-org.gpg
-  fi
-  echo '----Adding key'
-  curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo gpg  --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg
 
-  echo '----Adding repo config file'
   # Take snapshot build date
-  set +e
-  default_date=$(date +'%Y-%m-%d')
-  echo '----Enter the snapshot build date [default:'  $default_date '].'
-  read -r -p "----Will wait for 10 seconds or press any key to continue immediately" -t 10 date
-  date="${date:=$default_date}"'/'
-  echo '----Selected snapshot date is - '$date
-  set +e
-  # From url
-  url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$date'/apt/$(lsb_release -cs)'
-  url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
-  echo '----Using url - '$url
+  _get_build_date
 
-  # Add repor config/Update repo data command
-  echo '----Creating/Updating repo config'
-  sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
+  # Update repo data
+  _update_repo
+
+  # KEY=/usr/share/keyrings/packages-pgadmin-org.gpg
+  # if [[ -f "$KEY" ]]; then
+  #   echo "----Key exists. Removing key"
+  #   rm -f /usr/share/keyrings/packages-pgadmin-org.gpg
+  # fi
+  # echo '----Adding key'
+  # curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo gpg  --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg
+
+  # echo '----Adding repo config file'
+  # # Take snapshot build date
+  # set +e
+  # default_date=$(date +'%Y-%m-%d')
+  # echo '----Enter the snapshot build date [default:'  $default_date '].'
+  # read -r -p "----Will wait for $WAIT_FOR_USER_INPUT seconds or press any key to continue immediately" -t $WAIT_FOR_USER_INPUT date
+  # date="${date:=$default_date}"'/'
+  # echo '----Selected snapshot date is - '$date
+  # set +e
+  # # From url
+  # url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$date'/apt/$(lsb_release -cs)'
+  # url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
+  # echo '----Using url - '$url
+
+  # # Add repor config/Update repo data command
+  # echo '----Creating/Updating repo config'
+  # sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
 
   # Check mode
   suffix=""
@@ -566,12 +655,61 @@ _install_snapshot_build_pgadmin(){
   echo '\n'
 }
 
+_uninstall(){
+  # Take pgAdmin mode as argument
+  mode=$1
+  mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
+  remove_data_dir=$2
+
+  # Check mode
+  suffix=""
+  if [ "$mode" = "desktop" ]; then
+    echo '----Uninstalling pgAdmin4-desktop'
+    sudo apt remove pgadmin4-desktop -y
+    suffix="-desktop"
+  elif [ "$mode" = "server" ]; then
+    echo '----Uninstalling pgAdmin4-web'
+    sudo apt remove pgadmin4-web -y
+    suffix="-web"
+    # Configure the webserver, if you installed pgadmin4-web:
+    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+  else
+    echo '----Uninstalling pgAdmin4 both modes'
+    sudo apt remove pgadmin4 -y
+    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+  fi
+  echo '----Running aut-remove'
+  sudo yum auto-remove
+  echo '----Clean cache'
+  sudo apt clean all
+
+  set +e
+  if [ ${remove_data_dir} == 1 ]; then
+    if [ "$mode" = "desktop" ]; then
+      sudo rm -rf $HOME/.pgadmin/*
+      sudo rmdir $HOME/.pgadmin/
+    elif [ "$mode" = "server" ]; then
+      sudo rm -rf /var/lib/pgadmin/*
+      sudo rmdir /var/lib/pgadmin/
+    else
+      sudo rm -rf $HOME/.pgadmin/*
+      sudo rmdir $HOME/.pgadmin/
+      sudo rm -rf /var/lib/pgadmin/*
+      sudo rmdir /var/lib/pgadmin/
+    fi
+  set -e
+
+}
+
 if [ "$operation" = "install" ]; then
   # Install released pgAdmin
   _install_released_pgadmin $mode
 elif [ "$operation" = "install_cb" ]; then
   # Install candidate build pgAdmin
   _install_candidate_build_pgadmin $mode
+elif [ "$operation" = "uninstall" ]; then
+  # Uninstall candidate build pgAdmin
+  _uninstall $mode
 elif [ "$operation" = "install_snapshot" ];then
   # Insall snapshot
   _install_snapshot_build_pgadmin $mode
@@ -584,34 +722,33 @@ elif [ "$operation" = "upgrade_cb" ]; then
 elif [ "$operation" = "upgrade_test" ]; then
   # Install released pgAdmin
   _install_released_pgadmin $mode
-  echo 'Press any key to continue... '
+  echo 'Press any key to Verify installed pgAdmin... '
   read var
 
   # Verify released pgAdmin
   _verify_installed_pgadmin $mode
-  echo 'Press any key to continue... '
+  echo 'Press any key to Upgrade to candidate build... '
   read var
 
   # Upgrade pgAdmin
   _upgrade_pgadmin_to_candidate_build $mode
-  echo 'Press any key to continue... '
+  echo 'Press any key to Verify upgraded pgAdmin... '
   read var
 
   # Verify upgraded pgAdmin
   _verify_installed_pgadmin $mode
-  echo 'Press any key to continue... '
-  read var
+
 elif [ "$operation" = "fresh_test" ]; then
   # Install candidate build pgAdmin
   _install_candidate_build_pgadmin $mode
-  echo 'Press any key to continue... '
+  echo 'Press any key to Verify installed pgAdmin.. '
   read var
 
   # Verify upgraded pgAdmin
   _verify_installed_pgadmin $mode
-  echo 'Press any key to continue... '
-  read var
 
 else
     echo 'Specify correct operation:install, verify, upgrade, all'
 fi
+
+echo '!!!!!!! Thank You !!!!!!!'
