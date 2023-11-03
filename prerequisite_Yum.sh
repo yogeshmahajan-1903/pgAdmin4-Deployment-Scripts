@@ -22,5 +22,5 @@ else
   echo 'Press any key to continue... '
   read var
   sudo sed -i '/WaylandEnable=/s/^#//g' /etc/gdm/custom.conf
-  sudo reboot
+  sudo systemctl restart gdm
 fi

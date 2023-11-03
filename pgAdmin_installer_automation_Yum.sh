@@ -120,33 +120,12 @@ _install_released_pgadmin(){
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
 
-  # TOREMOVE
-  # Get Plafrom
-  # IS_REDHAT=0
-  # IS_FEDORA=0
-  # os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
-  # if [[ "$os_name" = "Red Hat Enterprise Linux" || "$os_name" = "Rocky Linux"  || "$os_name" = "AlmaLinux" ]]; then
-  #   IS_REDHAT=1
-  # elif [ "$os_name" = "Fedora Linux"  ]; then
-  #   IS_FEDORA=1
-  # else
-  #   echo 'Unable to find out platform'
-  #   exit 1
-  # fi
-
-  # TOREMOVE
-  # Check existing repo. Do not pasuse execution if repo is empry
-  # set +e
-  # repo=$(rpm -qa | grep pgadmin4)
-  # set -e
-
   # Info
   echo ''
   echo '***********************************************************'
   echo 'Installing Released pgAdmin version. Mode: - '$mode
   echo '***********************************************************'
   echo ''
-  
   
   echo '******Downloading existing pgAdmin.*******'
   # Remove old repo if exists and add repo
@@ -533,60 +512,21 @@ _upgrade_pgadmin_to_candidate_build(){
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
 
-  # TOREMOVE
-  # # Plafrom
-  # IS_REDHAT=0
-  # IS_FEDORA=0
-  # os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
-  # if [[ "$os_name" = "Red Hat Enterprise Linux" || "$os_name" = "Rocky Linux" || "$os_name" = "AlmaLinux" ]]; then
-  #   IS_REDHAT=1
-  # elif [ "$os_name" = "Fedora Linux"  ]; then
-  #   IS_FEDORA=1
-  # else
-  #   echo 'Unable to find out platform'
-  # fi
-
-  # # Get repo info
-  # set +e
-  # repo=$(rpm -qa | grep pgadmin4)
-  # set -e
-
   echo ''
   echo '***********************************************************'
   echo 'Upgrading pgAdmin to candidate build : - '$mode
   echo '***********************************************************'
   echo ''
 
+  echo '******Configuring repo .*******'
   # Take candidate build date
   _get_build_date cb
 
   # Update repo data
   _update_repo cb
 
-  # # Remove old repo
-  # if [ ${IS_REDHAT} == 1 ]; then
-  #   # Remove old repo if exists
-  #   if [ ${REPO_EXISTS} == 1 ]; then
-  #     echo '----Removing old repo'
-  #     sudo rpm -e pgadmin4-redhat-repo
-  #   fi
-  #   # From url
-  #   url='https://developer.pgadmin.org/builds/'$date'/yum/pgadmin4-redhat-repo-2-1.noarch.rpm'
-  # elif [ ${IS_FEDORA} == 1 ]; then
-  #   # Remove old repo if exists
-  #   if [ ${REPO_EXISTS} == 1 ]; then
-  #     echo '----Removing old repo'
-  #     sudo rpm -e pgadmin4-fedora-repo
-  #   fi
-  #   # From url
-  #   url='https://developer.pgadmin.org/builds/'$date'/yum/pgadmin4-fedora-repo-2-1.noarch.rpm'
-  # fi
-
-  # # Add repo config
-  # echo '----Creating repo config'
-  # sudo rpm -i $url
-
   # Upgrade
+  echo '******Starting upgrade .*******'
   suffix=""
   if [ "$mode" = "desktop" ]; then
     echo '----Will start upgrading pgadmin desktop'
@@ -618,24 +558,6 @@ _install_candidate_build_pgadmin(){
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
 
-  # # Platfrom
-  # IS_REDHAT=0
-  # IS_FEDORA=0
-  # os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
-  # if [[ "$os_name" = "Red Hat Enterprise Linux"  || "$os_name" = "Rocky Linux"  || "$os_name" = "AlmaLinux" ]]; then
-  #   IS_REDHAT=1
-  # elif [ "$os_name" = "Fedora Linux"  ]; then
-  #   IS_FEDORA=1
-  # else
-  #   echo 'Unable to find out platform'
-  #   exit 1
-  # fi
-
-  # # Get repo info
-  # set +e
-  # repo=$(rpm -qa | grep pgadmin4)
-  # set -e
-
   # Info
   echo ''
   echo '***********************************************************'
@@ -643,47 +565,15 @@ _install_candidate_build_pgadmin(){
   echo '***********************************************************'
   echo ''
 
-  echo '******Downloading candidate build pgAdmin.*******'
+  echo '******Configuring repo .*******'
   # Take candidate build date
   _get_build_date cb
 
   # Update repo data
   _update_repo cb
   
-
-  # # Take candidate build date
-  # set +e
-  # default_date=$(date +'%Y-%m-%d')-1
-  # echo '----Enter the caididate build date [default:'  $default_date ']. '
-  # read -r -p "----Will wait 10 seconds to enter the date or press any key to continue immediately." -t 10 date
-  # date="${date:=$default_date}"'/'
-  # echo '----Selected candidate build is - '$date
-  # set -e
-
-  # # Delete old repo if exists and add new
-  # if [ ${IS_REDHAT} == 1 ]; then
-  #   # Remove old repo if exists
-  #   if [[ ! -z "$repo" ]]; then
-  #     echo '----Removing old repo'
-  #     sudo rpm -e pgadmin4-redhat-repo
-  #   fi
-  #   # From url
-  #   url='https://developer.pgadmin.org/builds/'$date'/yum/pgadmin4-redhat-repo-2-1.noarch.rpm'
-  # elif [ ${IS_FEDORA} == 1 ]; then
-  #   # remove old repo
-  #   if [[ ! -z "$repo" ]]; then
-  #     echo '----Removing old repo'
-  #     sudo rpm -e pgadmin4-fedora-repo
-  #   fi
-  #   # From url
-  #   url='https://developer.pgadmin.org/builds/'$date'/yum/pgadmin4-fedora-repo-2-1.noarch.rpm'
-  # fi  
-
-  # # Add repo config
-  # echo '----Creating repo config'
-  # sudo rpm -i $url
-
   # Check mode
+  echo '******Starting installtion .*******'
   suffix=""
   if [ "$mode" = "desktop" ]; then
     echo '----Installing pgAdmin4-desktop'
@@ -716,24 +606,6 @@ _install_snapshot_build_pgadmin(){
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
 
-  # # Plafrom
-  # IS_REDHAT=0
-  # IS_FEDORA=0
-  # os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
-  # if [[ "$os_name" = "Red Hat Enterprise Linux"  || "$os_name" = "Rocky Linux"  || "$os_name" = "AlmaLinux" ]]; then
-  #   IS_REDHAT=1
-  # elif [ "$os_name" = "Fedora Linux"  ]; then
-  #   IS_FEDORA=1
-  # else
-  #   echo 'Unable to find out platform'
-  #   exit 1
-  # fi
-
-  # # Get repo info
-  # set +e
-  # repo=$(rpm -qa | grep pgadmin4)
-  # set -e
-
   # Info
   echo ''
   echo '***********************************************************'
@@ -741,47 +613,15 @@ _install_snapshot_build_pgadmin(){
   echo '***********************************************************'
   echo ''
 
-  echo '******Downloading snapshot build pgAdmin.*******'
-
+  echo '******Configuring repo .*******'
   # Take snapshot build date
   _get_build_date
 
   # Update repo data
   _update_repo
 
-  # # Take snapshot build date
-  # set +e
-  # default_date=$(date +'%Y-%m-%d')
-  # echo '----Enter the snapshot build date [default:'  $default_date '].'
-  # read -r -p "----Will wait 10 seconds to enter the date or press any key to continue immediately" -t 10 date
-  # date="${date:=$default_date}"'/'
-  # echo '----Selected snapshot date is - '$date
-  # set -e
-
-  # # Remove old repo and add new
-  # if [ ${IS_REDHAT} == 1 ]; then
-  #   # Remove old repo if exists
-  #   if [[ ! -z "$repo" ]]; then
-  #     echo '----Removing old repo'
-  #     sudo rpm -e pgadmin4-redhat-repo
-  #   fi
-  #   # From url
-  #   url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$date'/yum/pgadmin4-redhat-repo-2-1.noarch.rpm'
-  # elif [ ${IS_FEDORA} == 1 ]; then
-  #   # remove old repo
-  #   if [[ ! -z "$repo" ]]; then
-  #     echo '----Removing old repo'
-  #     sudo rpm -e pgadmin4-fedora-repo
-  #   fi
-  #   # From url
-  #   url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$date'/yum/pgadmin4-fedora-repo-2-1.noarch.rpm'
-  # fi  
-
-  # # Add repo config
-  # echo '----Creating repo config'
-  # sudo rpm -i $url
-
   # Check mode
+  echo '******Starting installtion .*******'
   suffix=""
   if [ "$mode" = "desktop" ]; then
     echo '----Installing pgAdmin4-desktop'
@@ -814,6 +654,13 @@ _uninstall(){
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
 
+  # Info
+  echo ''
+  echo '***********************************************************'
+  echo 'Uninstalling pgAdmin mode: - '$mode
+  echo '***********************************************************'
+  echo ''
+
   # Check mode
   if [ "$mode" = "desktop" ]; then
     echo '----Uninstalling pgAdmin4-desktop'
@@ -830,27 +677,40 @@ _uninstall(){
   echo '----Clean cache'
   sudo yum clean all
 
+  # Info
+  echo ''
+  echo '***********************************************************'
+  echo 'pgAdmin uninstalled successfully - mode: - '$mode
+  echo '***********************************************************'
+  echo ''
+
   read -r -p 'Do you want to delete DATA DIR(y/N)' response
   case ${response} in
     y|Y )
       set +e
       echo '----Deleting DATA DIR'
       if [ "$mode" = "desktop" ]; then
+        echo '----Deleting /home/'$SUDO_USER'/.pgadmin/'
         rm -rf /home/$SUDO_USER/.pgadmin/*
         rmdir /home/$SUDO_USER/.pgadmin
       elif [ "$mode" = "server" ]; then
+        echo '----Deleting /var/lib/pgadmin/'
         sudo -E rm -rf /var/lib/pgadmin/*
         sudo -E rmdir /var/lib/pgadmin/
       else
+        echo '----Deleting /home/'$SUDO_USER'/.pgadmin/'
         rm -rf /home/$SUDO_USER/.pgadmin/*
         rmdir /home/$SUDO_USER/.pgadmin/
+        echo '----Deleting /var/lib/pgadmin/'
         sudo -E rm -rf /var/lib/pgadmin/*
         sudo -E rmdir /var/lib/pgadmin/
       fi
       set -e
+      echo '----DATA DIR is Deleted.'  
       ;;
     * )
-      echo '----DATA DIR is NOT deleted.'  
+      echo '----DATA DIR is NOT Deleted.'
+  echo ''
   esac
 
 }
@@ -909,6 +769,6 @@ else
     echo 'Specify correct operation:install, verify, upgrade, all, uninstall'
 fi
 
-echo '!!!!!!!!!!!!!!!!!!!!!!!!!'
+echo ''
 echo '!!!!!!! THANK YOU !!!!!!!'
-echo '!!!!!!!!!!!!!!!!!!!!!!!!!'
+echo ''
