@@ -17,9 +17,9 @@ help()
 {
     echo "Usage: bash pgAdmin_installer_automation_Apt.sh 
                   [ -o | --operation ]
-                      (required)[ install, install_snapshot, install_cb,
+                      (required)[ install, install_snapshot, install_cb(installs candidate build),
                                   verify, 
-                                  upgrade_cb, upgrade_test, fresh_test,
+                                  upgrade_cb(upgrade to candidate build), upgrade_test, fresh_test,
                                   uninstall], 
                   [ -m | --mode ]
                       (optional):[desktop or server]
@@ -94,11 +94,11 @@ _install_released_pgadmin(){
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
   
   # Info
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'Installing released pgAdmin version mode: - '$mode
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 
   # Download
   echo '******Downloading existing pgAdmin.*******'
@@ -124,18 +124,18 @@ _install_released_pgadmin(){
     sudo apt install pgadmin4-web -y
     suffix="-web"
     # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   else
     echo '----Installing pgAdmin4 in both modes'
     sudo apt install pgadmin4 -y
     # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   fi
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin installed successfully - '$(apt-show-versions pgadmin4"$suffix")
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 }
 
 _wait_for_window(){
@@ -197,11 +197,11 @@ _verify_installed_pgadmin_server_mode(){
   mode=$1
 
   # Info
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'Verifying pgAdmin Launch in Server mode.'
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 
   # App launch - Move to applications option an click
   xdotool mousemove --sync --screen 0 45 12
@@ -295,11 +295,11 @@ _verify_installed_pgadmin_server_mode(){
   xdotool key "Return"
   echo '----FF is closed.'
   # Final Msg
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin sever version verified successfully.'
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 
 }
 
@@ -309,11 +309,11 @@ _verify_installed_pgadmin_dektop_mode(){
   UNAME=$(uname -a)
   
   # Info
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'Verifying pgAdmin launch in Desktop mode'
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 
   # App launch - Move to applications option an click
   xdotool mousemove --sync --screen 0 45 12
@@ -337,8 +337,9 @@ _verify_installed_pgadmin_dektop_mode(){
   set -e
 
   # Search to pgAdmin window
-  wid=`xdotool search --onlyvisible --class --classname --name "pgAdmin 4"`
-  xdotool windowfocus $wid
+  # Use only name else it will fail giving multiple windows.
+  wid=`xdotool search --desktop --onlyvisible --name "${app_name}"`
+  xdotool windowactivate $wid
 
   # Check if window is maximized
   # Try to unmaximize
@@ -380,11 +381,11 @@ _verify_installed_pgadmin_dektop_mode(){
   echo '----pgAdmin is closed.'
 
   # Final Msg
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin desktop version verified successfully.'
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 }
 
 _verify_installed_pgadmin(){
@@ -432,30 +433,27 @@ _update_repo(){
   fi
   echo '----Adding key'
   curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo gpg  --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg
+  set -e
   
-    echo '----Adding repo config file'
+  echo '----Adding repo config file'
   if [ "$build_type" = "cb" ]; then
     # From url
-    url='https://developer.pgadmin.org/builds/'$BUILD_DATE='''/apt/$(lsb_release -cs)'
+    url='https://developer.pgadmin.org/builds/'$BUILD_DATE'/apt/$(lsb_release -cs)'
     url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
-    echo '----Using url - '$url
 
-    # Add/Update  repo config
-    echo '----Creating repo config'
-    sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
   else
     # From url
-    url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$BUILD_DATE='''/apt/$(lsb_release -cs)'
+    url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$BUILD_DATE'/apt/$(lsb_release -cs)'
     url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
     echo '----Using url - '$url
-
-    # Add/Update  repo config
-    echo '----Creating repo config'
-    sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
   fi
-  set -e
-}
+  # Add/Update  repo config
+  echo '----Using url - '$url
+  echo '----Creating repo config'
+  echo ''
+  sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
 
+}
 
 _upgrade_pgadmin_to_candidate_build(){
   mode=$1
@@ -504,7 +502,7 @@ _upgrade_pgadmin_to_candidate_build(){
   else
     echo '----Upgrading pgAdmin4 both modes'
     sudo apt upgrade pgadmin4 -y
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   fi
   
   # Final msg
@@ -573,11 +571,11 @@ _install_candidate_build_pgadmin(){
     sudo apt install pgadmin4-web -y
     suffix="-web"
     # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   else
     echo '----Installing pgAdmin4 both modes'
     sudo apt install pgadmin4 -y
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   fi
   echo ''
   echo '***********************************************************'
@@ -642,17 +640,17 @@ _install_snapshot_build_pgadmin(){
     sudo apt install pgadmin4-web -y
     suffix="-web"
     # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   else
     echo '----Installing pgAdmin4 both modes'
     sudo apt install pgadmin4 -y
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   fi
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin Sanpshot build installed successfully - '$(apt-show-versions pgadmin4"$suffix")
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 }
 
 _uninstall(){
@@ -660,44 +658,46 @@ _uninstall(){
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
   remove_data_dir=$2
+  remove_data_dir=$([ "$remove_data_dir" == "" ] && echo "1" || echo "0")
 
   # Check mode
-  suffix=""
   if [ "$mode" = "desktop" ]; then
     echo '----Uninstalling pgAdmin4-desktop'
     sudo apt remove pgadmin4-desktop -y
-    suffix="-desktop"
   elif [ "$mode" = "server" ]; then
     echo '----Uninstalling pgAdmin4-web'
     sudo apt remove pgadmin4-web -y
-    suffix="-web"
-    # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
   else
     echo '----Uninstalling pgAdmin4 both modes'
     sudo apt remove pgadmin4 -y
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
   fi
-  echo '----Running aut-remove'
-  sudo yum auto-remove
+  echo '----Running auto-remove'
+  sudo apt auto-remove -y
   echo '----Clean cache'
   sudo apt clean all
 
-  set +e
-  if [ ${remove_data_dir} == 1 ]; then
-    if [ "$mode" = "desktop" ]; then
-      sudo rm -rf $HOME/.pgadmin/*
-      sudo rmdir $HOME/.pgadmin/
-    elif [ "$mode" = "server" ]; then
-      sudo rm -rf /var/lib/pgadmin/*
-      sudo rmdir /var/lib/pgadmin/
-    else
-      sudo rm -rf $HOME/.pgadmin/*
-      sudo rmdir $HOME/.pgadmin/
-      sudo rm -rf /var/lib/pgadmin/*
-      sudo rmdir /var/lib/pgadmin/
-    fi
-  set -e
+  read -r -p 'Do you waont to delete DATA DIR(y/N)'response
+  case ${response} in
+    y|Y )
+      set +e
+      echo '----Deleting DATA DIR'
+      if [ "$mode" = "desktop" ]; then
+        rm -rf /home/$SUDO_USER/.pgadmin/*
+        rmdir /home/$SUDO_USER/.pgadmin
+      elif [ "$mode" = "server" ]; then
+        sudo -E rm -rf /var/lib/pgadmin/*
+        sudo -E rmdir /var/lib/pgadmin/
+      else
+        rm -rf /home/$SUDO_USER/.pgadmin/*
+        rmdir /home/$SUDO_USER/.pgadmin/
+        sudo -E rm -rf /var/lib/pgadmin/*
+        sudo -E rmdir /var/lib/pgadmin/
+      fi
+      set -e
+      ;;
+    * )
+      echo '----DATA DIR is NOT deleted.'  
+  esac
 
 }
 

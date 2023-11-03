@@ -26,6 +26,5 @@ else
     read var
     sudo sed -i '/WaylandEnable=/s/^#//g' /etc/gdm3/custom.conf
     sudo reboot
-    #sudo systemctl restart gdm3
   fi
 fi

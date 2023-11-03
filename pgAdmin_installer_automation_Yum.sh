@@ -11,15 +11,15 @@ BUILD_DATE=''
 # Exit on error
 set -e
 
-## Set up parser
+# Set up parser
 # help function
 help()
 {
     echo "Usage: bash pgAdmin_installer_automation_Yum.sh 
                   [ -o | --operation ]
-                      (required)[ install, install_snapshot, install_cb,
+                      (required)[ install, install_snapshot, install_cb(installs candidate build),
                                   verify, 
-                                  upgrade_cb, upgrade_test, fresh_test,
+                                  upgrade_cb(upgrade to candidate build), upgrade_test, fresh_test,
                                   uninstall], 
                   [ -m | --mode ]
                       (optional):[desktop or server]
@@ -149,14 +149,14 @@ _install_released_pgadmin(){
   echo '******Downloading existing pgAdmin.*******'
   # Remove old repo if exists and add repo
   if [ ${IS_REDHAT} == 1 ]; then
-    if [[ ! -z "$REPO_EXISTS" ]]; then
+    if [ ${REPO_EXISTS} ==  1 ]; then
       echo '----Removing old repo'
       sudo rpm -e pgadmin4-redhat-repo
     fi
     echo '----Adding repo'
     sudo rpm -i https://ftp.postgresql.org/pub/pgadmin/pgadmin4/yum/pgadmin4-redhat-repo-2-1.noarch.rpm
   elif [ ${IS_FEDORA} == 1 ]; then
-    if [[ ! -z "$REPO_EXISTS" ]]; then
+    if [ ${REPO_EXISTS} ==  1 ]; then
       echo '----Removing old repo'
       sudo rpm -e pgadmin4-fedora-repo
     fi
@@ -175,12 +175,12 @@ _install_released_pgadmin(){
     sudo yum install pgadmin4-web -y
     suffix="-web"
     # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   else
     echo '----Installing pgAdmin4 in both modes'
     sudo yum install pgadmin4 -y
     # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   fi
 
   # Check version
@@ -217,6 +217,28 @@ _wait_for_window(){
 
 }
 
+_wait_method(){
+  set +e
+  wait_time=$1
+  counter=$wait_time
+  echo -ne '----Waiting for '$counter' seconds'
+  while [ $counter -gt 0 ]
+  do
+    read -t 1 -n 1
+    if [ $? = 0 ] ; then
+      counter=0
+      sleep 1
+    else
+      echo -ne "."
+    fi
+    counter=$(( $counter -1))
+  done
+  if [ $counter = 0 ]; then
+  echo
+  fi
+  set -e
+}
+
 _verify_installed_pgadmin_server_mode(){
   # platform name
   os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
@@ -225,11 +247,11 @@ _verify_installed_pgadmin_server_mode(){
   mode=$1
 
   # Info
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'Verifying pgAdmin Launch in Server mode.'
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 
   # App launch - Move to applications option an click
   xdotool mousemove --sync --screen 0 45 12
@@ -250,7 +272,7 @@ _verify_installed_pgadmin_server_mode(){
   app_name="Mozilla Firefox"
   time=$WAIT_TO_LAUNCH_APP
   _wait_for_window "$app_name" "$time"
-  sleep $WAIT_TO_LAUNCH_FF
+  _wait_method $WAIT_TO_LAUNCH_FF
   set -e
 
   # Search to FF window
@@ -288,15 +310,15 @@ _verify_installed_pgadmin_server_mode(){
   echo '----Opening pgAdmin in FF'
   xdotool type "http://127.0.0.1/pgadmin4"
   xdotool key Return
-  sleep $WAIT_TO_LAUNCH_PGAMIN_IN_FF
+  _wait_method $WAIT_TO_LAUNCH_PGAMIN_IN_FF
 
-  #Move to login email and password &  Enter email
+  # Move to login email and password &  Enter email
   echo '----Entering login details'
   xdotool type "edb@edb.com"
   xdotool key "Tab"
   xdotool type "adminedb"
   xdotool key "Return"
-  sleep 5
+  _wait_method 6
 
   # Handle password save
   xdotool mousemove 240 530 click 1
@@ -328,11 +350,11 @@ _verify_installed_pgadmin_server_mode(){
   xdotool key "Return"
   echo '----FF is closed.'
   # Final Msg
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin server version verified successfully.'
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 
 }
 
@@ -341,11 +363,11 @@ _verify_installed_pgadmin_dektop_mode(){
   os_name=$(grep "^NAME=" /etc/os-release | awk -F "=" '{ print $2 }' | sed 's/"//g' | awk -F "." '{ print $1 }')
 
   # Info
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'Verifying pgAdmin launch in Desktop mode'
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 
   # App launch - Move to applications option an click
   xdotool mousemove --sync --screen 0 45 12
@@ -365,11 +387,13 @@ _verify_installed_pgadmin_dektop_mode(){
   app_name="pgAdmin 4"
   time=$WAIT_TO_LAUNCH_APP
   _wait_for_window "$app_name" "$time"
-  sleep $WAIT_TO_LAUNCH_PGAMIN_IN_NWJS
+  _wait_method $WAIT_TO_LAUNCH_PGAMIN_IN_NWJS
   set -e
 
   # Search to pgAdmin window
+  # Use only name else it will fail giving multiple windows.
   wid=`xdotool search --onlyvisible --desktop --name "${app_name}"`
+  xdotool windowactivate $wid
 
   # Check if window is maximized
   # Try to unmaximize
@@ -414,11 +438,11 @@ _verify_installed_pgadmin_dektop_mode(){
   echo '----pgAdmin is closed.'
 
   # Final Msg
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin desktop version verified successfully.'
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 }
 
 _verify_installed_pgadmin(){
@@ -483,7 +507,7 @@ _update_repo(){
         sudo rpm -e pgadmin4-redhat-repo
       fi
       # From url
-      url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$date'/yum/pgadmin4-redhat-repo-2-1.noarch.rpm'
+      url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$BUILD_DATE'/yum/pgadmin4-redhat-repo-2-1.noarch.rpm'
     elif [ ${IS_FEDORA} == 1 ]; then
       # Remove old repo if exists
       if [ ${REPO_EXISTS} == 1 ]; then
@@ -491,14 +515,16 @@ _update_repo(){
         sudo rpm -e pgadmin4-fedora-repo
       fi
       # From url
-      url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$date'/yum/pgadmin4-fedora-repo-2-1.noarch.rpm'
+      url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$BUILD_DATE'/yum/pgadmin4-fedora-repo-2-1.noarch.rpm'
     fi
+  fi
 
   # Add repo config
   echo '----Creating repo config'
+  echo '----Using url - '$url
+  echo ''
   sudo rpm -i $url
 }
-
 
 _upgrade_pgadmin_to_candidate_build(){
   # Get args
@@ -571,7 +597,7 @@ _upgrade_pgadmin_to_candidate_build(){
   else
     echo '----Upgrading pgAdmin4 both modes'
     sudo yum upgrade pgadmin4 -y
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   fi
 
   # Check version
@@ -615,13 +641,14 @@ _install_candidate_build_pgadmin(){
   echo '***********************************************************'
   echo ''
 
+  echo '******Downloading candidate build pgAdmin.*******'
   # Take candidate build date
   _get_build_date cb
 
   # Update repo data
   _update_repo cb
   
-  # echo '******Downloading candidate build pgAdmin.*******'
+
   # # Take candidate build date
   # set +e
   # default_date=$(date +'%Y-%m-%d')-1
@@ -665,33 +692,27 @@ _install_candidate_build_pgadmin(){
     sudo yum install pgadmin4-web -y
     suffix="-web"
     # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   else
     echo '----Installing pgAdmin4 both modes'
     sudo yum install pgadmin4 -y
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   fi
 
   # Check version
   pgadmin_version=$(sudo rpm -qa | grep -i pgAdmin4"${suffix}")
 
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin Candidate build installed successfully - '"${pgadmin_version}"
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 }
 
 _install_snapshot_build_pgadmin(){
   # Take pgAdmin mode as argument
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
-
-  # Take snapshot build date
-  _get_build_date
-
-  # Update repo data
-  _update_repo
 
   # # Plafrom
   # IS_REDHAT=0
@@ -711,14 +732,21 @@ _install_snapshot_build_pgadmin(){
   # repo=$(rpm -qa | grep pgadmin4)
   # set -e
 
-  # # Info
-  # echo '\n'
-  # echo '***********************************************************'
-  # echo 'Installing Snapshot build pgAdmin mode: - '$mode
-  # echo '***********************************************************'
-  # echo '\n'
+  # Info
+  echo ''
+  echo '***********************************************************'
+  echo 'Installing Snapshot build pgAdmin mode: - '$mode
+  echo '***********************************************************'
+  echo ''
 
-  # echo '******Downloading snapshot build pgAdmin.*******'
+  echo '******Downloading snapshot build pgAdmin.*******'
+
+  # Take snapshot build date
+  _get_build_date
+
+  # Update repo data
+  _update_repo
+
   # # Take snapshot build date
   # set +e
   # default_date=$(date +'%Y-%m-%d')
@@ -762,66 +790,66 @@ _install_snapshot_build_pgadmin(){
     sudo yum install pgadmin4-web -y
     suffix="-web"
     # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   else
     echo '----Installing pgAdmin4 both modes'
     sudo yum install pgadmin4 -y
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
   fi
 
   # Check version
   pgadmin_version=$(sudo rpm -qa | grep -i pgAdmin4"${suffix}")
 
-  echo '\n'
+  echo ''
   echo '***********************************************************'
   echo 'pgAdmin Snapshot build installed successfully - '"${pgadmin_version}"
   echo '***********************************************************'
-  echo '\n'
+  echo ''
 }
 
 _uninstall(){
   # Take pgAdmin mode as argument
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
-  remove_data_dir=$2
 
   # Check mode
-  suffix=""
   if [ "$mode" = "desktop" ]; then
     echo '----Uninstalling pgAdmin4-desktop'
     sudo yum remove pgadmin4-desktop -y
-    suffix="-desktop"
   elif [ "$mode" = "server" ]; then
     echo '----Uninstalling pgAdmin4-web'
     sudo yum remove pgadmin4-web -y
-    suffix="-web"
-    # Configure the webserver, if you installed pgadmin4-web:
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
   else
     echo '----Uninstalling pgAdmin4 both modes'
-    sudo yum remove pgadmin4 -y
-    sudo /usr/pgadmin4/bin/setup-web.sh --yes
+    sudo yum remove pgadmin4* -y
   fi
   echo '----Earsing pgAdmin4 both modes'
   sudo yum erase pgadmin4*
   echo '----Clean cache'
   sudo yum clean all
 
-  set +e
-  if [ ${remove_data_dir} == 1 ]; then
-    if [ "$mode" = "desktop" ]; then
-      sudo rm -rf $HOME/.pgadmin/*
-      sudo rmdir $HOME/.pgadmin/
-    elif [ "$mode" = "server" ]; then
-      sudo rm -rf /var/lib/pgadmin/*
-      sudo rmdir /var/lib/pgadmin/
-    else
-      sudo rm -rf $HOME/.pgadmin/*
-      sudo rmdir $HOME/.pgadmin/
-      sudo rm -rf /var/lib/pgadmin/*
-      sudo rmdir /var/lib/pgadmin/
-    fi
-  set -e
+  read -r -p 'Do you waont to delete DATA DIR(y/N)'response
+  case ${response} in
+    y|Y )
+      set +e
+      echo '----Deleting DATA DIR'
+      if [ "$mode" = "desktop" ]; then
+        rm -rf /home/$SUDO_USER/.pgadmin/*
+        rmdir /home/$SUDO_USER/.pgadmin
+      elif [ "$mode" = "server" ]; then
+        sudo -E rm -rf /var/lib/pgadmin/*
+        sudo -E rmdir /var/lib/pgadmin/
+      else
+        rm -rf /home/$SUDO_USER/.pgadmin/*
+        rmdir /home/$SUDO_USER/.pgadmin/
+        sudo -E rm -rf /var/lib/pgadmin/*
+        sudo -E rmdir /var/lib/pgadmin/
+      fi
+      set -e
+      ;;
+    * )
+      echo '----DATA DIR is NOT deleted.'  
+  esac
 
 }
 
