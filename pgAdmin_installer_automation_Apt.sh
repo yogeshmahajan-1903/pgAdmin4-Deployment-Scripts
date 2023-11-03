@@ -8,6 +8,8 @@ WAIT_FOR_USER_INPUT=8
 ABOUT_BOX_SHOW_TIME=3
 
 BUILD_DATE=''
+export PGADMIN_SETUP_EMAIL='edb@edb.com'
+export PGADMIN_SETUP_PASSWORD='adminedb'
 
 # Exit on error
 set -e
@@ -436,19 +438,17 @@ _update_repo(){
   set -e
   
   echo '----Adding repo config file'
+      # From url
   if [ "$build_type" = "cb" ]; then
-    # From url
     url='https://developer.pgadmin.org/builds/'$BUILD_DATE'/apt/$(lsb_release -cs)'
-    url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
-
   else
     # From url
     url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$BUILD_DATE'/apt/$(lsb_release -cs)'
-    url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
-    echo '----Using url - '$url
   fi
+
   # Add/Update  repo config
   echo '----Using url - '$url
+  url="deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] $url pgadmin4 main"
   echo '----Creating repo config'
   echo ''
   sudo sh -c "echo $url > /etc/apt/sources.list.d/pgadmin4.list && apt update"
@@ -654,6 +654,13 @@ _install_snapshot_build_pgadmin(){
 }
 
 _uninstall(){
+  # Info
+  echo ''
+  echo '***********************************************************'
+  echo 'Uninstalling pgAdmin mode: - '$mode
+  echo '***********************************************************'
+  echo ''
+
   # Take pgAdmin mode as argument
   mode=$1
   mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
@@ -673,10 +680,17 @@ _uninstall(){
   fi
   echo '----Running auto-remove'
   sudo apt auto-remove -y
-  echo '----Clean cache'
+  echo '----Cleaning cache'
   sudo apt clean all
 
-  read -r -p 'Do you waont to delete DATA DIR(y/N)'response
+  # Info
+  echo ''
+  echo '***********************************************************'
+  echo 'pgAdmin uninstalled successfully - mode: - '$mode
+  echo '***********************************************************'
+  echo ''
+
+  read -r -p 'Do you want to delete DATA DIR(y/N)' response
   case ${response} in
     y|Y )
       set +e
@@ -694,10 +708,13 @@ _uninstall(){
         sudo -E rmdir /var/lib/pgadmin/
       fi
       set -e
+      echo '----DATA DIR is Deleted.'  
       ;;
     * )
-      echo '----DATA DIR is NOT deleted.'  
+      echo '----DATA DIR is NOT Deleted.'
+  echo ''
   esac
+  
 
 }
 
@@ -751,4 +768,6 @@ else
     echo 'Specify correct operation:install, verify, upgrade, all'
 fi
 
-echo '!!!!!!! Thank You !!!!!!!'
+echo '!!!!!!!!!!!!!!!!!!!!!!!!!'
+echo '!!!!!!! THANK YOU !!!!!!!'
+echo '!!!!!!!!!!!!!!!!!!!!!!!!!'

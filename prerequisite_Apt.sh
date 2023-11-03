@@ -9,7 +9,7 @@ echo $XDG_SESSION_TYPE
 if [ "$XDG_SESSION_TYPE" = "x11" ]; then
   echo 'Display type is correct.Will reset display size.'
   xrandr --output Virtual1 --mode 1440x900 --size 16:10
-  sleep 3
+  sleep 2
   echo 'Good to go. Run Installer scripts'
 else
   echo 'Need to update display.'

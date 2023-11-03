@@ -7,6 +7,8 @@ WAIT_TO_LAUNCH_PGAMIN_IN_FF=8
 ABOUT_BOX_SHOW_TIME=3
 
 BUILD_DATE=''
+export PGADMIN_SETUP_EMAIL='edb@edb.com'
+export PGADMIN_SETUP_PASSWORD='adminedb'
 
 # Exit on error
 set -e
@@ -83,7 +85,7 @@ fi
 # Setup display
 echo '******Setting up display.********'
 xrandr --output Virtual1 --mode 1440x900 --size 16:10
-sleep 2
+sleep 1.5
 
 # Move terminal window to bottom
 wid=`xdotool getactivewindow`
@@ -828,7 +830,7 @@ _uninstall(){
   echo '----Clean cache'
   sudo yum clean all
 
-  read -r -p 'Do you waont to delete DATA DIR(y/N)'response
+  read -r -p 'Do you want to delete DATA DIR(y/N)' response
   case ${response} in
     y|Y )
       set +e
@@ -906,3 +908,7 @@ elif [ "$operation" = "fresh_test" ]; then
 else
     echo 'Specify correct operation:install, verify, upgrade, all, uninstall'
 fi
+
+echo '!!!!!!!!!!!!!!!!!!!!!!!!!'
+echo '!!!!!!! THANK YOU !!!!!!!'
+echo '!!!!!!!!!!!!!!!!!!!!!!!!!'
