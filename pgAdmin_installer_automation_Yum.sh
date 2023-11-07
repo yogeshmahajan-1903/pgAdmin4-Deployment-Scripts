@@ -271,12 +271,12 @@ _verify_installed_pgadmin_server_mode(){
 
 
   # Move window to Left top
-  if [[ "$os_name" = "Red Hat Enterprise Linux" || "$os_name" = "Rocky Linux" ]]; then
+  if [ ${IS_REDHAT} == 1 ]; then
     xdotool windowsize --sync $wid 1375 700
     sleep 0.5
     xdotool windowmove $wid 90 0
     sleep 0.5
-  elif [[ "$os_name" =~ "Fedora Linux" ]]; then
+  elif [ ${IS_FEDORA} == 1 ]; then
     xdotool windowsize --sync $wid 1375 700
     sleep 0.5
     xdotool windowmove $wid 90 0
@@ -386,12 +386,12 @@ _verify_installed_pgadmin_dektop_mode(){
   fi
 
   # Move window to Left top
-  if [[ "$os_name" = "Red Hat Enterprise Linux" || "$os_name" = "Rocky Linux" ]]; then
+  if [ ${IS_REDHAT} == 1 ]; then
     xdotool windowsize --sync $wid 1360 700
     sleep 0.5
     xdotool windowmove $wid 90 0
     sleep 0.5
-  elif [[ "$os_name" = "Fedora Linux" ]]; then
+  elif [ ${IS_FEDORA} == 1 ]; then
     xdotool windowsize --sync $wid 1360 700
     sleep 0.5
     xdotool windowmove $wid 90 0
