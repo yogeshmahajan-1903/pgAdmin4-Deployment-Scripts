@@ -77,6 +77,8 @@ upgrade_test - Installs & verify released version and then upgrades to candidate
 
 fresh_test - Installs & verify the candidate build.
 
+uninstall - Unintalls existing pgAdmin 4.
+
 Modes -
 
   server - Web mode
