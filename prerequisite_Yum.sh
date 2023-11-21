@@ -18,7 +18,7 @@ if [ "$XDG_SESSION_TYPE" = "x11" ]; then
   echo 'Good to go. Run Installer scripts'
 else
   echo 'Need to update display.'
-  echo '******  This will edit etc/gdm/custom.conf file & will restart system. ******'
+  echo '******  This will edit etc/gdm/custom.conf file & will restart display. ******'
   echo 'Press any key to continue... '
   read var
   sudo sed -i '/WaylandEnable=/s/^#//g' /etc/gdm/custom.conf

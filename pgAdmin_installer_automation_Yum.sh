@@ -129,6 +129,7 @@ _install_released_pgadmin(){
   
   echo '******Downloading existing pgAdmin.*******'
   # Remove old repo if exists and add repo
+  set +e
   if [ ${IS_REDHAT} == 1 ]; then
     if [ ${REPO_EXISTS} ==  1 ]; then
       echo '----Removing old repo'
@@ -144,6 +145,7 @@ _install_released_pgadmin(){
     echo '----Adding repo'
     sudo rpm -i https://ftp.postgresql.org/pub/pgadmin/pgadmin4/yum/pgadmin4-fedora-repo-2-1.noarch.rpm
   fi
+  set -e
 
   # Check mode and run install commands
   suffix=""
@@ -462,6 +464,7 @@ _get_build_date(){
 
 _update_repo(){
   build_type=$1
+  set +e
   if [ "$build_type" = "cb" ]; then
     if [ ${IS_REDHAT} == 1 ]; then
       # Remove old repo if exists
@@ -499,6 +502,7 @@ _update_repo(){
       url='https://ftp.postgresql.org/pub/pgadmin/pgadmin4/snapshots/'$BUILD_DATE'/yum/pgadmin4-fedora-repo-2-1.noarch.rpm'
     fi
   fi
+  set -e
 
   # Add repo config
   echo '----Creating repo config'
