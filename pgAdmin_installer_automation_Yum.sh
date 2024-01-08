@@ -463,6 +463,12 @@ _get_build_date(){
 }
 
 _update_repo(){
+  set +e
+  repo=$(rpm -qa | grep pgadmin4)
+  if [[ ! -z "$repo" ]]; then
+    REPO_EXISTS=1
+  fi
+
   build_type=$1
   set +e
   if [ "$build_type" = "cb" ]; then
