@@ -84,7 +84,9 @@ fi
 # Actual Script Execution
 # Setup display
 echo '******Setting up display.********'
-xrandr --output Virtual1 --mode 1440x900 --size 16:10
+CURRENT_DISPLAY=`xrandr | awk '/ connected/ && /[[:digit:]]x[[:digit:]].*+/{print $1}'`
+xrandr --output $CURRENT_DISPLAY --mode 1440x900 --size 16:10
+#xrandr --output Virtual1 --mode 1440x900 --size 16:10
 sleep 1.5
 
 # Move terminal window to bottom

@@ -8,7 +8,8 @@ sudo apt install apt-show-versions -y
 echo $XDG_SESSION_TYPE
 if [ "$XDG_SESSION_TYPE" = "x11" ]; then
   echo 'Display type is correct.Will reset display size.'
-  xrandr --output Virtual1 --mode 1440x900 --size 16:10
+  CURRENT_DISPLAY=`xrandr | awk '/ connected/ && /[[:digit:]]x[[:digit:]].*+/{print $1}'`
+  xrandr --output $CURRENT_DISPLAY --mode 1440x900 --size 16:10
   sleep 2
   echo 'Good to go. Run Installer scripts'
 else
