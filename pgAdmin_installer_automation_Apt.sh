@@ -602,12 +602,15 @@ _uninstall(){
   if [ "$mode" = "desktop" ]; then
     echo '----Uninstalling pgAdmin4-desktop'
     sudo apt remove pgadmin4-desktop -y
+    sudo apt purge pgadmin4-desktop -y
   elif [ "$mode" = "server" ]; then
     echo '----Uninstalling pgAdmin4-web'
     sudo apt remove pgadmin4-web -y
+    sudo apt purge pgadmin4-web -y
   else
     echo '----Uninstalling pgAdmin4 both modes'
     sudo apt remove pgadmin4 -y
+    sudo apt purge pgadmin4* -y
   fi
   echo '----Running auto-remove'
   sudo apt auto-remove -y
