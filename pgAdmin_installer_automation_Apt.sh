@@ -649,7 +649,23 @@ _uninstall(){
       echo '----DATA DIR is NOT Deleted.'
   echo ''
   esac
-  
+
+  echo ''
+  read -r -p 'Do you want to delete Code directory(y/N)' response
+  case ${response} in
+    y|Y )
+      set +e
+      echo '----Deleting Code directory'
+        echo '----Deleting files from /usr/pgadmin4/'
+        sudo -E rm -rf /usr/pgadmin4/*
+        sudo -E rmdir /usr/pgadmin4/
+      set -e
+      echo '----Code directory is Deleted.'  
+      ;;
+    * )
+      echo '----Code directory is NOT Deleted.'
+  echo ''
+  esac
 
 }
 
