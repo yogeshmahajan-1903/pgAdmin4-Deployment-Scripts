@@ -4,7 +4,7 @@ WAIT_TO_LAUNCH_APP=15
 WAIT_TO_LAUNCH_FF=10
 WAIT_TO_LAUNCH_PGAMIN_IN_NWJS=15
 
-WAIT_TO_LAUNCH_PGAMIN_IN_FF=8
+WAIT_TO_LAUNCH_PGAMIN_IN_FF=12
 ABOUT_BOX_SHOW_TIME=3
 
 BUILD_DATE=''
@@ -17,16 +17,22 @@ set -e
 # Set up parser
 help()
 {
-    echo "Usage: bash pgAdmin_installer_automation_Apt.sh 
-                  [ -o | --operation ]
-                      (required)[ install, install_snapshot, install_cb(installs candidate build),
-                                  verify, 
-                                  upgrade_cb(upgrade to candidate build), upgrade_test, fresh_test,
-                                  uninstall], 
-                  [ -m | --mode ]
-                      (optional):[desktop or server]
-                  [ -h | --help  ]"
-    exit 2
+  echo "Usage: bash pgAdmin_installer_automation_Apt.sh 
+  [ -o | --operation ](required):
+      install  :Install latest released version
+      install_snapshot :Install snapshot of specified date
+      install_cb :Install candidate build of specified date
+      install_old :Install older pgadmin version
+      verify :Verify pgadmin installtion
+      upgrade_cb :Upgrade to candidate build
+      upgrade_test : Installs released version and then upgrades with candidate build and verify instalttion
+      fresh_test : Installs candidate build and verify instalttion
+      uninstall : Uninstall the pgadmin from system 
+  [ -m | --mode ] (optional):
+      desktop
+      server
+  [ -h | --help  ]"
+  exit 2
 }
 SHORT=o:,m:,h
 LONG=operation:,mode:,help
@@ -65,7 +71,7 @@ do
   esac
 done
 
-operations=("install" "install_cb" "install_snapshot" "verify" "upgrade_cb" "upgrade_test" "fresh_test" "uninstall")
+operations=("install" "install_cb" "install_snapshot" "install_old" "verify" "upgrade_cb" "upgrade_test" "fresh_test" "uninstall")
 modes=("desktop" "server" "")
 if ! [[ " ${operations[@]} " =~ " ${operation} "  ]]; then
   echo 'Invalid operation'
@@ -584,6 +590,72 @@ _install_snapshot_build_pgadmin(){
   echo ''
 }
 
+_install_older_version(){
+  # Take pgAdmin mode, version as argument
+  mode=$1
+  mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
+
+
+  # Take version
+  set +e
+  default_version=""
+  read -r -p "----Enter the pgadmin version." version
+  version="${version:=$default_version}"
+  echo '----Entered version is - '$version
+  set -e
+
+  if  [ "$version" = "" ]; then
+    echo 'Version is not specified.'
+  else
+    # Info
+    echo ''
+    echo '***********************************************************'
+    echo 'Installing pgadmin version: - '$version
+    echo '***********************************************************'
+    echo ''
+
+    echo '******Downloading package.*******'
+    url=https://pgadmin-archive.postgresql.org/pgadmin4/apt/$(lsb_release -cs)/dists/pgadmin4/main/binary-amd64/
+    server_url="$url"pgadmin4-server_"$version"_amd64.deb
+    desktop_url="$url"pgadmin4-desktop_"$version"_amd64.deb
+
+    if curl --output /dev/null --silent --head --fail "$server_url"; then
+        echo '----Package found.'
+        curl -O $server_url
+        curl -O $desktop_url
+
+        echo '******Starting installtion .*******'
+        sudo dpkg -i ./pgadmin4-server_"$version"_amd64.deb
+
+
+        # Check mode
+        suffix=""
+        if [ "$mode" = "desktop" ]; then
+          echo '----Installing pgAdmin4-desktop'
+          sudo dpkg -i ./pgadmin4-desktop_"$version"_amd64.deb
+          suffix="-desktop"
+        elif [ "$mode" = "server" ]; then
+          echo '----Installing pgAdmin4-web'
+          suffix="-web"
+          # Configure the webserver, if you installed pgadmin4-web:
+          sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
+        else
+          echo '----Installing pgAdmin4 both modes'
+          sudo dpkg -i ./pgadmin4-desktop_"$version"_amd64.deb
+          sudo -E /usr/pgadmin4/bin/setup-web.sh --yes
+        fi
+        echo ''
+        echo '***********************************************************'
+        echo 'pgAdmin Older version installed - '$(apt-show-versions pgadmin4"$suffix")
+        echo '***********************************************************'
+        echo ''
+    else
+      echo '################ Package for version specified does NOT exist -'$version
+    fi
+
+  fi
+}
+
 _uninstall(){
   # Info
   echo ''
@@ -678,6 +750,9 @@ if [ "$operation" = "install" ]; then
 elif [ "$operation" = "install_cb" ]; then
   # Install candidate build pgAdmin
   _install_candidate_build_pgadmin $mode
+elif [ "$operation" = "install_old" ]; then
+  # Install candidate build pgAdmin
+  _install_older_version $mode
 elif [ "$operation" = "uninstall" ]; then
   # Uninstall candidate build pgAdmin
   _uninstall $mode

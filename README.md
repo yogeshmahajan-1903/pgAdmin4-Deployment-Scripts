@@ -42,6 +42,7 @@ bash prerequisite_Yum.sh
 sudo bash pgAdmin_installer_automation_Yum.sh -o install
 ````
 
+
 Note: While installing in server mode, email/password should be entered edb@edb.com/adminedb
 
   For server mode only

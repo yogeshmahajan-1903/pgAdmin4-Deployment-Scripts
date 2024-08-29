@@ -17,16 +17,22 @@ set -e
 # help function
 help()
 {
-    echo "Usage: bash pgAdmin_installer_automation_Yum.sh 
-                  [ -o | --operation ]
-                      (required)[ install, install_snapshot, install_cb(installs candidate build),
-                                  verify, 
-                                  upgrade_cb(upgrade to candidate build), upgrade_test, fresh_test,
-                                  uninstall], 
-                  [ -m | --mode ]
-                      (optional):[desktop or server]
-                  [ -h | --help  ]"
-    exit 2
+  echo "Usage: bash pgAdmin_installer_automation_Apt.sh 
+  [ -o | --operation ](required):
+      install  :Install latest released version
+      install_snapshot :Install snapshot of specified date
+      install_cb :Install candidate build of specified date
+      install_old :Install older pgadmin version
+      verify :Verify pgadmin installtion
+      upgrade_cb :Upgrade to candidate build
+      upgrade_test : Installs released version and then upgrades with candidate build and verify instalttion
+      fresh_test : Installs candidate build and verify instalttion
+      uninstall : Uninstall the pgadmin from system 
+  [ -m | --mode ] (optional):
+      desktop
+      server
+  [ -h | --help  ]"
+  exit 2
 }
 
 # Args
@@ -69,7 +75,7 @@ do
 done
 
 # Validate args
-operations=("install" "install_cb" "install_snapshot" "verify" "upgrade_cb" "upgrade_test" "fresh_test" "uninstall")
+operations=("install" "install_cb" "install_snapshot" "install_old" "verify" "upgrade_cb" "upgrade_test" "fresh_test" "uninstall")
 modes=("desktop" "server" "")
 if ! [[ " ${operations[@]} " =~ " ${operation} "  ]]; then
   echo 'Invalid operation'
@@ -661,6 +667,96 @@ _install_snapshot_build_pgadmin(){
   echo ''
 }
 
+_install_older_version(){
+  # Take pgAdmin mode, version as argument
+  mode=$1
+  mode=$([ "$mode" == "" ] && echo "Server & Desktop" || echo "$mode")
+
+  # Take version
+  set +e
+  default_version=""
+  read -r -p "----Enter the pgadmin version." version
+  version="${version:=$default_version}"
+  echo '----Entered version is - '$version
+  set -e
+
+  if  [ "$version" = "" ]; then
+    echo 'Version is not specified.'
+  else
+    # Info
+    echo ''
+    echo '***********************************************************'
+    echo 'Installing pgadmin version: - '$version
+    echo '***********************************************************'
+    echo ''
+
+    echo '******Downloading package.*******'
+    if [ ${IS_REDHAT} == 1 ]; then
+      # From url
+      os_name=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+      os_version_minor=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')
+      os_version=${os_version_minor%.*}
+      os_variant=$(grep -oP '(?<=^VARIANT_ID=).+' /etc/os-release | tr -d '"')
+
+      os_flavour="$os_name"-"$os_version""${os_variant^}"-"$(arch)"
+      url=https://pgadmin-archive.postgresql.org/pgadmin4/yum/redhat/$os_flavour/
+
+      desktop_url="$url"pgadmin4-desktop-"$version"-1.el"$os_version"."$(arch)".rpm
+      server_url="$url"pgadmin4-server-"$version"-1.el"$os_version"."$(arch)".rpm
+      web_url="$url"pgadmin4-web-"$version"-1.el"$os_version"."$(arch)".rpm
+
+      desktop_rpm=pgadmin4-desktop-"$version"-1.el"$os_version"."$(arch)".rpm
+      server_rpm=pgadmin4-server-"$version"-1.el"$os_version"."$(arch)".rpm
+      web_rpm=pgadmin4-web-"$version"-1.el"$os_version"."$(arch)".rpm
+
+
+    elif [ ${IS_FEDORA} == 1 ]; then
+      # form the url
+      os_name=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+      os_version=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')
+      os_variant=$(grep -oP '(?<=^VARIANT_ID=).+' /etc/os-release | tr -d '"')
+
+      os_flavour="$os_name"-"$os_version""${os_variant^}"-"$(arch)"
+      url=https://pgadmin-archive.postgresql.org/pgadmin4/yum/fedora/$os_flavour/
+
+      desktop_url="$url"pgadmin4-desktop-"$version"-1.fc"$os_version"."$(arch)".rpm
+      server_url="$url"pgadmin4-server-"$version"-1.fc"$os_version"."$(arch)".rpm
+      web_url="$url"pgadmin4-web-"$version"-1.fc"$os_version"."$(arch)".rpm
+
+      desktop_rpm=pgadmin4-desktop-"$version"-1.fc"$os_version"."$(arch)".rpm
+      server_rpm=pgadmin4-server-"$version"-1.fc"$os_version"."$(arch)".rpm
+      web_rpm=pgadmin4-web-"$version"-1.fc"$os_version"."$(arch)".rpm
+
+    fi
+
+    if curl --output /dev/null --silent --head --fail "$server_url"; then
+        echo '----Package found.'
+        curl -O $server_url
+        curl -O $desktop_url
+        curl -O $web_url
+
+        echo '******Starting installtion .*******'
+        echo '*****Need to install released verison first and then will downgrade .*******'
+        _install_released_pgadmin
+
+        echo '******Now will downgrade .*******'
+        sudo dnf install ./$server_rpm --allowerasing -y
+
+        # Check version
+        pgadmin_version=$(sudo rpm -qa | grep -i pgAdmin4)
+
+        echo ''
+        echo '***********************************************************'
+        echo 'pgAdmin Older version installed - '$pgadmin_version
+        echo '***********************************************************'
+        echo ''
+    else
+      echo '################ Package for version specified does NOT exist -'$version
+    fi
+
+  fi
+}
+
 _uninstall(){
   # Take pgAdmin mode as argument
   mode=$1
@@ -734,6 +830,9 @@ if [ "$operation" = "install" ]; then
 elif [ "$operation" = "uninstall" ]; then
   # Uninstall candidate build pgAdmin
   _uninstall $mode
+elif [ "$operation" = "install_old" ]; then
+  # Install candidate build pgAdmin
+  _install_older_version $mode
 elif [ "$operation" = "install_cb" ]; then
   # Install candidate build pgAdmin
   _install_candidate_build_pgadmin $mode
