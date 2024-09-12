@@ -625,8 +625,11 @@ _install_older_version(){
         curl -O $desktop_url
 
         echo '******Starting installtion .*******'
-        sudo dpkg -i ./pgadmin4-server_"$version"_amd64.deb
+        echo '*****Need to install released verison first and then will downgrade .*******'
+        _install_released_pgadmin
 
+        echo '******Now will downgrade .*******'
+        sudo dpkg -i ./pgadmin4-server_"$version"_amd64.deb
 
         # Check mode
         suffix=""
