@@ -85,11 +85,11 @@ fi
 
 
 # Setup display
-echo '******Setting up display.********'
-CURRENT_DISPLAY=`xrandr | awk '/ connected/ && /[[:digit:]]x[[:digit:]].*+/{print $1}'`
-xrandr --output $CURRENT_DISPLAY --mode 1440x900 --size 16:10
-#xrandr --output Virtual1 --mode 1440x900 --size 16:10
-sleep 1.5
+# echo '******Setting up display.********'
+# CURRENT_DISPLAY=`xrandr | awk '/ connected/ && /[[:digit:]]x[[:digit:]].*+/{print $1}'`
+# xrandr --output $CURRENT_DISPLAY --mode 1440x900 --size 16:10
+# #xrandr --output Virtual1 --mode 1440x900 --size 16:10
+# sleep 1.5
 
 # Move Terminal Window to bottom
 wid=`xdotool getactivewindow`
