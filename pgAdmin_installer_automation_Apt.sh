@@ -237,6 +237,8 @@ _verify_installed_pgadmin_server_mode(){
   wid=`xdotool search --sync --onlyvisible --class --classname --name "${app_name}"`
   xdotool windowactivate $wid key --delay 250 ctrl+t
   xdotool windowfocus $wid
+  xdotool key shift+Print
+
 
   # Check if window is maximized
   # Try to unmaximize
@@ -247,6 +249,7 @@ _verify_installed_pgadmin_server_mode(){
     xdotool mousemove --sync 875 45 click --repeat 2 1
     echo '----Unmaximized.'
   fi
+  xdotool key shift+Print
 
   # Move window to Left top
   if [[ "$UNAME" =~ "Debian" ]]; then
@@ -266,6 +269,7 @@ _verify_installed_pgadmin_server_mode(){
   xdotool type "http://127.0.0.1/pgadmin4"
   xdotool key Return
   _wait_method $WAIT_TO_LAUNCH_PGAMIN_IN_FF
+  xdotool key shift+Print
 
   #Move to login email and password &  Enter email
   echo '----Entering login details'
@@ -273,7 +277,7 @@ _verify_installed_pgadmin_server_mode(){
   xdotool key "Tab"
   xdotool type "adminedb"
   xdotool key "Return"
-  _wait_method 6
+  _wait_method 15
 
   # Handle password save
   xdotool mousemove 240 530 click 1
@@ -286,6 +290,7 @@ _verify_installed_pgadmin_server_mode(){
   # About option
   xdotool mousemove 485 270 click 1
   sleep 3
+  xdotool key shift+Print
   # Close About box
   xdotool mousemove 1095 215 click 1
   sleep 0.5
@@ -336,6 +341,8 @@ _verify_installed_pgadmin_dektop_mode(){
   xdotool type "pgAdmin 4"
   sleep 0.5
   xdotool key Return
+  sleep 1
+  xdotool key shift+Print
 
   # Wait for pgAdmin to open
   echo '----Waiting to open pgAdmin.'
@@ -349,6 +356,7 @@ _verify_installed_pgadmin_dektop_mode(){
   # Use only name else it will fail giving multiple windows.
   wid=`xdotool search --desktop --onlyvisible --name "${app_name}"`
   xdotool windowactivate $wid
+  xdotool key shift+Print
 
   # Check if window is maximized
   # Try to unmaximize
@@ -373,7 +381,8 @@ _verify_installed_pgadmin_dektop_mode(){
     sleep 0.5
   fi
   echo '----pgAdmin window in correct position.'
-
+  xdotool key shift+Print
+  
   echo '----Wait till I show About box to check version.'
   # Move to Help Menu and click
   xdotool mousemove 240 75 click 1
@@ -381,6 +390,7 @@ _verify_installed_pgadmin_dektop_mode(){
   # Move to About menu
   xdotool mousemove 285 205 click 1
   sleep $ABOUT_BOX_SHOW_TIME
+  xdotool key shift+Print
   echo '----About menu shown. Now will quit pgAdmin.'
 
   # Move to pgAdmin4 close at top and click
