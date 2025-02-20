@@ -5,7 +5,7 @@ UNAME=$(uname -a)
 sudo apt-get install curl -y
 sudo apt-get install xdotool -y
 sudo apt install apt-show-versions -y
-xhost +
+#xhost +
 echo $XDG_SESSION_TYPE
 if [ "$XDG_SESSION_TYPE" = "x11" ]; then
   echo 'Display type is correct.Will reset display size.'
