@@ -84,7 +84,7 @@ if [[ ! -z " ${mode} " ]] && ! [[ " ${modes[@]} " =~ " ${mode} "  ]]; then
 fi
 
 
-Setup display
+#Setup display
 echo '******Setting up display.********'
 CURRENT_DISPLAY=`xrandr | awk '/ connected/ && /[[:digit:]]x[[:digit:]].*+/{print $1}'`
 xrandr --output $CURRENT_DISPLAY --mode 1440x900 --size 16:10
