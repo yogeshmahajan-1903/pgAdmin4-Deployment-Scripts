@@ -694,6 +694,9 @@ _install_older_version(){
     if [ ${IS_REDHAT} == 1 ]; then
       # From url
       os_name=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+      if [ ${os_name} == "rocky" || ${os_name} == "almalinux" ]; then
+        os_name="rhel"
+      fi
       os_version_minor=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')
       os_version=${os_version_minor%.*}
       os_variant=$(grep -oP '(?<=^VARIANT_ID=).+' /etc/os-release | tr -d '"')
